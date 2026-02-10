@@ -1,22 +1,39 @@
-This is a Kotlin Multiplatform project targeting iOS.
+Metro native build bug with bindings containers
+==============================================
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+Including a binding container from an external module in a dependency graph cause build failure for native build.
 
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+```
+error: Compilation failed: Empty list doesn't contain element at index 0.
 
-### Build and Run iOS Application
+ * Source files: ExpectResourceCollectors.kt, Res.kt, Drawable0.iosMain.kt, ActualResourceCollectors.kt, App.kt, AppGraph.kt, Greeting.kt, MainViewController.kt, Platform.kt
+ * Compiler version: 2.3.10
+ * Output kind: LIBRARY
 
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+error: org.jetbrains.kotlin.fir.pipeline.IrGenerationExtensionException: Empty list doesn't contain element at index 0.
+	at org.jetbrains  .kotlin.fir.pipeline.Fir2IrPipeline.applyIrGenerationExtensions(convertToIr.kt:577)
+	at org.jetbrains.kotlin.fir.pipeline.Fir2IrPipeline.runActualizationPipeline(convertToIr.kt:279)
+	at org.jetbrains.kotlin.fir.pipeline.Fir2IrPipeline.convertToIrAndActualize(convertToIr.kt:150)
+	at org.jetbrains.kotlin.fir.pipeline.ConvertToIrKt.convertToIrAndActualize(convertToIr.kt:115)
+	at org.jetbrains.kotlin.fir.pipeline.ConvertToIrKt.convertToIrAndActualize$default(convertToIr.kt:88)
+	at org.jetbrains.kotlin.backend.konan.Fir2IrKt.fir2Ir(Fir2Ir.kt:75)
+	at org.jetbrains.kotlin.backend.konan.driver.phases.Fir2IrKt.Fir2IrPhase$lambda$1(Fir2Ir.kt:28)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseBuildersKt$createSimpleNamedCompilerPhase$1.phaseBody(PhaseBuilders.kt:58)
+	at org.jetbrains.kotlin.config.phaser.NamedCompilerPhase.invoke(CompilerPhase.kt:102)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseEngine.runPhase(PhaseEngine.kt:64)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseEngine.runPhase$default(PhaseEngine.kt:56)
+	at org.jetbrains.kotlin.backend.konan.driver.phases.Fir2IrKt.runFir2Ir(Fir2Ir.kt:32)
+	at org.jetbrains.kotlin.backend.konan.driver.NativeCompilerDriver.serializeKLibK2(NativeCompilerDriver.kt:131)
+	at org.jetbrains.kotlin.backend.konan.driver.NativeCompilerDriver.produceKlib(NativeCompilerDriver.kt:106)
+	at org.jetbrains.kotlin.backend.konan.driver.NativeCompilerDriver.run$lambda$0$0$0(NativeCompilerDriver.kt:46)
+Compilation failed: Empty list doesn't contain element at index 0.
+```
 
----
+Code sample
+===========
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+The `:bindings` module defines a binding container who provides an internal dependency
+
+The `:composeApp` module defines the AppGraph that include the SimpleBindings from `:bindings`
+
+This setup would build for jvm/android but will fails on native
